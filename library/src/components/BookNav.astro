@@ -1,0 +1,16 @@
+---
+import { type Book, url } from "../lib/books";
+interface Props { book: Book; current?: string }
+const { book, current } = Astro.props;
+const item = (id: string) => ["flex min-h-9 items-center rounded px-2 py-1 leading-snug hover:bg-paper-2", current === id && "bg-tint font-bold text-accent-ink"];
+---
+<a href={url(`${book.slug}/`)} class="block font-bold leading-snug">{book.title}</a>
+<p class="mt-1 mb-4 text-xs text-muted">{book.chapters.length} chapters{book.pages ? ` · ${book.pages} pages` : ""}</p>
+{book.foreword && <a href={book.foreword.href} class:list={item(book.foreword.id)}>{book.foreword.title}</a>}
+{book.parts.map((p) => (
+  <div class="mt-4">
+    <p class="px-2 text-xs font-bold text-muted">{p.title}</p>
+    {p.chapters.map((c) => <a href={c.href} class:list={item(c.id)}>{c.title}</a>)}
+  </div>
+))}
+{book.pdf && <a href={book.pdf} class="mt-6 flex min-h-11 items-center justify-center rounded bg-accent-ink px-3 font-bold text-white hover:bg-ink">PDF</a>}

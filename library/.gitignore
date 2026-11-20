@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+public/pdf/
+public/covers/
+dist-next/
+dist-old/
+.brain-cache/
+.build.lock/

@@ -1,0 +1,28 @@
+#cloud-config
+# agent-os: one box that hosts oracle agents (herdr + Claude Code), reached over tailscale only.
+# Same file works for doctl --user-data-file and virt-install --cloud-init user-data=.
+hostname: agent-os
+users:
+  - name: nat
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: [ "ssh-ed25519 AAAA...REPLACE-WITH-YOUR-PUBLIC-KEY you@laptop" ]
+ssh_pwauth: false
+disable_root: true
+package_update: true
+packages: [curl, ca-certificates, git, jq, tmux, direnv, pass, ufw, build-essential, unzip, qemu-guest-agent]
+swap:
+  filename: /swapfile
+  size: 2G
+runcmd:
+  - systemctl enable --now qemu-guest-agent || true
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  - su - nat -c 'curl -fsSL https://herdr.dev/install.sh | sh'
+  - su - nat -c 'curl -fsSL https://claude.ai/install.sh | bash'
+  - loginctl enable-linger nat
+  - ufw default deny incoming
+  - ufw allow in on tailscale0
+  - ufw allow 22/tcp
+  - ufw --force enable
+  - touch /var/lib/agent-os.ready

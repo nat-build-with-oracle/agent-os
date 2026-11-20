@@ -1,0 +1,37 @@
+---
+import { books, url } from "../lib/books";
+const list = await books();
+const n = (x: number) => x.toLocaleString("en-US");
+---
+<p class="text-muted hidden">
+  {list.length} เล่ม · {list.reduce((s, b) => s + b.chapters.length, 0)} ไฟล์บท ·
+  {n(list.reduce((s, b) => s + (b.pages ?? 0), 0))} หน้า PDF
+</p>
+<ol class="mt-10 space-y-16">
+  {list.map((b) => (
+    <li class="grid gap-6 border-t border-rule pt-8 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
+      <a href={url(`${b.slug}/`)} class="block w-36 sm:w-auto">
+        <img src={b.cover} alt={`ปก ${b.title}`} width="176" class="w-full rounded border border-rule" loading="lazy" />
+      </a>
+      <div class="min-w-0">
+        <p class="text-xs text-muted">{b.date} · {b.chapters.length} chapters{b.pages ? ` · ${b.pages} pages` : ""}</p>
+        <h2 class="mt-1 text-2xl font-bold leading-snug"><a href={url(`${b.slug}/`)} class="hover:text-accent-ink">{b.title}</a></h2>
+        <p class="mt-2 max-w-2xl">{b.subtitle}</p>
+        <div class="mt-5 grid gap-x-8 gap-y-4 text-[0.9rem] md:grid-cols-2">
+          {b.parts.map((p) => (
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-muted">{p.title}</p>
+              <ul class="mt-1">
+                {p.chapters.map((c) => <li><a href={c.href} class="flex min-h-8 items-center leading-snug hover:text-accent-ink">{c.title}</a></li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p class="mt-5 flex flex-wrap gap-3 text-sm">
+          {b.foreword && <a href={b.foreword.href} class="flex min-h-11 items-center rounded border border-ink px-4 font-bold hover:bg-ink hover:text-paper">Start reading</a>}
+          {b.pdf && <a href={b.pdf} class="flex min-h-11 items-center rounded px-4 font-bold text-accent-ink underline underline-offset-4">PDF</a>}
+        </p>
+      </div>
+    </li>
+  ))}
+</ol>

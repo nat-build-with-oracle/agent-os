@@ -1,0 +1,13 @@
+# library-brain
+
+A static library of books with a prebuilt semantic index. Everything below is a plain file next to this one.
+
+- brain/data/meta.json      books (title, slug, passage range), model, dimensions, prompts
+- brain/data/passages.json  [[book_index, chapter_file, chapter_title, section, text], ...]
+- brain/data/vec768.i8      int8 vectors, n x 768 (EmbeddingGemma, normalised; divide by meta.scale_full)
+- brain/data/vec.i8         int8 vectors, n x 256 (Matryoshka cut, used for the map; divide by meta.scale)
+- brain/data/knn.u32        n x 4 nearest passages in meaning
+- <slug>/<chapter_file>/    the chapter as a web page
+
+To search by meaning, embed your query with the same model and the query prompt in meta.json, then take the dot product
+with vec768. Without an embedding model, match words in passages.json.

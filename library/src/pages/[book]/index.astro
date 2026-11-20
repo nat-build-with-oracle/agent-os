@@ -1,0 +1,34 @@
+---
+import Shell from "../../layouts/Shell.astro";
+import { books } from "../../lib/books";
+export async function getStaticPaths() {
+  return (await books()).map((book) => ({ params: { book: book.slug }, props: { book } }));
+}
+const { book } = Astro.props;
+---
+<Shell title={book.title}>
+  <main class="mx-auto grid max-w-5xl gap-10 px-5 py-12 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+    <img src={book.cover} alt={`ปก ${book.title}`} class="w-48 rounded border border-rule md:w-full" />
+    <div class="min-w-0">
+      <p class="text-xs text-muted">{book.date} · {book.pages ?? "?"} หน้า · {book.chapters.length} ไฟล์ · ราว {book.words.toLocaleString("en-US")} คำ</p>
+      <h1 class="mt-1 text-4xl font-bold leading-tight">{book.title}</h1>
+      <p class="mt-3 text-lg">{book.subtitle}</p>
+      <p class="mt-6 flex flex-wrap gap-3">
+        {book.foreword && <a href={book.foreword.href} class="flex min-h-11 items-center rounded bg-accent-ink px-5 font-bold text-white hover:bg-ink">เริ่มอ่าน: {book.foreword.title}</a>}
+        <a href={book.pdf} class="flex min-h-11 items-center rounded border border-ink px-5 font-bold hover:bg-ink hover:text-paper">PDF ทั้งเล่ม</a>
+      </p>
+      {book.parts.map((p) => (
+        <section class="mt-10">
+          <h2 class="text-sm font-bold text-muted">{p.title}</h2>
+          <ol class="mt-2 divide-y divide-rule border-y border-rule">
+            {p.chapters.map((c) => (
+              <li><a href={c.href} class="flex min-h-12 items-baseline gap-4 py-2 hover:text-accent-ink">
+                <span class="w-6 shrink-0 text-sm text-muted">{Number(c.num)}</span><span class="font-bold leading-snug">{c.short}</span>
+              </a></li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  </main>
+</Shell>

@@ -1,0 +1,30 @@
+{
+  "name": "library-brain",
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "assets": "node scripts/assets.mjs",
+    "dev": "bun run assets && astro dev --host 127.0.0.1 --port 3414",
+    "build": "bun run assets && bun run brain && sh scripts/swap.sh",
+    "preview": "astro preview --host 127.0.0.1 --port 3414",
+    "brain": "uv run --quiet --no-project --python 3.12 --with numpy --with umap-learn python scripts/brain.py",
+    "serve": "bun server.ts",
+    "site": "sh scripts/swap.sh",
+    "build:static": "bun run assets && sh scripts/swap.sh"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "astro": "^5.17.1",
+    "three": "0.170.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/three": "^0.187.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.8.3"
+  },
+  "description": "Books as a static site with a brain: every passage embedded on the Apple Neural Engine at build time, a 3D meaning map, search by meaning, and an MCP over the prebuilt vectors.",
+  "license": "MIT"
+}

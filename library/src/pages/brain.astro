@@ -1,0 +1,32 @@
+---
+import "../styles/global.css";
+import "../styles/brain.css";
+import cfg from "../../library.config.mjs";
+import { url, BASE } from "../lib/books";
+---
+<html lang="th">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex, nofollow" />
+  <title>brain · {cfg.title}</title>
+  <style>html, body { margin:0; height:100%; overflow:hidden; background:#07080c; } #brain { position:fixed; inset:0; }</style>
+</head>
+<body>
+<div id="brain" data-base={BASE} class="brain">
+  <canvas data-b="c"></canvas>
+  <div class="top">
+    <div class="brand glass"><a href={url("")}>{cfg.title}</a><b>brain</b><span data-b="stat">กำลังโหลด…</span></div>
+    <form data-b="f" class="search glass"><input data-b="q" type="search" placeholder="ค้นด้วยความหมาย เช่น จับคู่ iPad · ทำไมเข้าได้แค่ tailnet" /><button class="btn">ค้น</button></form>
+    <button data-b="play" class="btn play" title="ทัวร์อัตโนมัติ: เดินตามจุดที่หนังสือต่างเล่มพูดเรื่องเดียวกัน">▶ สำรวจ</button><button data-b="links" class="btn">เส้น: เปิด</button>
+    <button data-b="reset" class="btn" title="กลับมุมเริ่มต้น">⟲</button>
+  </div>
+  <div class="legend glass"><div class="seg" data-b="seg"><span class="thumb"></span><button data-layout="sep" class="on" title="แต่ละเล่มมีกลุ่มของตัวเอง"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="4" cy="6" r="3.2"/><circle cx="11" cy="6" r="3.2"/><circle cx="18" cy="6" r="3.2"/></svg>แยกเล่ม</button><button data-layout="all" title="ทุกเล่มในพื้นที่ความหมายเดียว เห็นว่าตรงกันตรงไหน"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="8" cy="6" r="4" opacity=".75"/><circle cx="11" cy="6" r="4" opacity=".75"/><circle cx="14" cy="6" r="4" opacity=".75"/></svg>รวมเล่ม</button></div><p data-b="crossinfo" class="crossinfo"></p><div class="modes"><button data-m="book" class="on">สีตามเล่ม</button><button data-m="chapter">สีตามบท</button></div><div data-b="fams"></div></div>
+  <aside data-b="panel" class="panel glass"></aside>
+  <div class="tip" data-b="tip"></div>
+  <div class="status" data-b="status"></div>
+</div>
+<script>
+  import { mountBrain } from "../lib/brain-scene";
+  const el = document.getElementById("brain")!; mountBrain(el, { base: el.dataset.base });
+</script>
+</body>
+</html>

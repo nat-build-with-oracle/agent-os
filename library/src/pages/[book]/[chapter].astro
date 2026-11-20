@@ -1,0 +1,45 @@
+---
+import Shell from "../../layouts/Shell.astro";
+import BookNav from "../../components/BookNav.astro";
+import { books } from "../../lib/books";
+import { getEntry, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const out = [];
+  for (const book of await books()) {
+    const order = [book.foreword, ...book.parts.flatMap((p) => p.chapters)].filter(Boolean);
+    order.forEach((c, i) => out.push({ params: { book: book.slug, chapter: c!.file }, props: { book, c, prev: order[i - 1], next: order[i + 1] } }));
+  }
+  return out;
+}
+const { book, c, prev, next } = Astro.props;
+const entry = (await getEntry("chapters", c.id))!;
+const { Content, headings } = await render(entry);
+const toc = headings.filter((h) => h.depth === 2);
+---
+<Shell title={`${c.title} · ${book.title}`}>
+  <div class="mx-auto flex max-w-7xl gap-10 px-5 py-8">
+    <aside class="hidden w-64 shrink-0 lg:block">
+      <nav class="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto pr-2 text-[0.86rem]" aria-label="บทในเล่ม"><BookNav book={book} current={c.id} /></nav>
+    </aside>
+    <main class="min-w-0 flex-1">
+      <details class="mb-6 rounded border border-rule lg:hidden">
+        <summary class="flex min-h-11 cursor-pointer items-center px-3 font-bold">{book.title} · สารบัญ</summary>
+        <nav class="px-3 pb-3 text-[0.9rem]" aria-label="บทในเล่ม"><BookNav book={book} current={c.id} /></nav>
+      </details>
+      <article class="prose"><Content /></article>
+      <nav class="mt-14 grid gap-3 text-sm sm:grid-cols-2" aria-label="บทก่อน บทถัดไป">
+        {prev ? <a href={prev.href} class="flex min-h-11 items-center rounded border border-rule px-4 py-2 hover:border-accent-ink">← {prev.title}</a> : <span />}
+        {next && <a href={next.href} class="flex min-h-11 items-center justify-end rounded border border-rule px-4 py-2 text-right hover:border-accent-ink">{next.title} →</a>}
+      </nav>
+    </main>
+    {toc.length > 2 && (
+      <aside class="hidden w-56 shrink-0 xl:block">
+        <nav class="sticky top-6 text-[0.8rem] leading-snug" aria-label="ในบทนี้">
+          <p class="mb-2 text-xs font-bold text-muted">ในบทนี้</p>
+          {toc.map((h) => <a href={`#${h.slug}`} class="block py-1 text-muted hover:text-accent-ink">{h.text}</a>)}
+        </nav>
+      </aside>
+    )}
+  </div>
+</Shell>

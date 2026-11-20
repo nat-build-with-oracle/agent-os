@@ -1,0 +1,61 @@
+---
+// Landing: the library brain IS the hero (full first screen), the book list follows below it.
+import "../styles/global.css";
+import "../styles/brain.css";
+import { books, url, BASE } from "../lib/books";
+import cfg from "../../library.config.mjs";
+const list = await books();
+const pages = list.reduce((s, b) => s + (b.pages ?? 0), 0);
+const files = list.reduce((s, b) => s + b.chapters.length, 0);
+---
+<html lang="th">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex, nofollow" />
+  <title>{cfg.title}</title>
+  <style>
+    .hero { height: 92svh; min-height: 560px; }
+    .hero .intro { position:absolute; left:14px; bottom:14px; max-width:min(560px, calc(100vw - 28px)); padding:18px 20px; pointer-events:none; }
+    .hero .intro h1 { margin:.2rem 0 .4rem; font-size:clamp(2rem, 5vw, 3.4rem); line-height:1.1; font-weight:700; color:#fff; }
+    .hero .intro p { margin:0; color:#cfcbc2; line-height:1.6; }
+    .hero .intro .k { color:var(--accent); font-weight:700; font-size:.85rem; }
+    .hero .intro .stats { margin-top:.7rem; color:var(--dim); font-size:.85rem; }
+    .hero .intro a { pointer-events:auto; color:var(--accent); }
+    .hero .legend { left:auto; right:14px; bottom:14px; width:260px; }
+    .hero .status { display:none; }
+    .hero:has(.panel.open) .legend { display:none; }   /* the reading panel and the legend share the right edge */
+    .hero .cue { position:absolute; left:50%; bottom:10px; transform:translateX(-50%); color:var(--dim); font-size:12px; pointer-events:none; }
+    .fade { height:64px; background:linear-gradient(#07080c, var(--color-paper)); }
+    @media (max-width: 760px) { .hero .legend { display:none; } }
+  </style>
+</head>
+<body>
+  <section id="brain" data-base={BASE} class="brain hero" aria-label="meaning map of every passage in the library">
+    <canvas data-b="c"></canvas>
+    <div class="top">
+      <div class="brand glass"><a href={url("")}>{cfg.title}</a><a href={url("brain/")} style="color:var(--accent);font-weight:400">full screen</a><span data-b="stat">กำลังโหลด…</span></div>
+      <form data-b="f" class="search glass"><input data-b="q" type="search" aria-label="ค้นด้วยความหมาย" placeholder="ค้นด้วยความหมาย เช่น จับคู่ iPad · ทำไมเข้าได้แค่ tailnet" /><button class="btn">ค้น</button></form>
+      <button data-b="play" class="btn play" title="ทัวร์อัตโนมัติ: เดินตามจุดที่หนังสือต่างเล่มพูดเรื่องเดียวกัน">▶ สำรวจ</button><button data-b="links" class="btn">เส้น: เปิด</button>
+      <button data-b="reset" class="btn" title="กลับมุมเริ่มต้น">⟲</button>
+    </div>
+    <div class="intro glass">
+      <span class="k">{cfg.kicker}</span>
+      <h1>{cfg.heroTitle}</h1>
+      <p>{cfg.intro}</p>
+      <p class="stats">{list.length} books · {files} chapters{pages ? ` · ${pages} PDF pages` : ""} · <a href="#books">all books ↓</a></p>
+    </div>
+    <div class="legend glass"><div class="seg" data-b="seg"><span class="thumb"></span><button data-layout="sep" class="on" title="แต่ละเล่มมีกลุ่มของตัวเอง"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="4" cy="6" r="3.2"/><circle cx="11" cy="6" r="3.2"/><circle cx="18" cy="6" r="3.2"/></svg>แยกเล่ม</button><button data-layout="all" title="ทุกเล่มในพื้นที่ความหมายเดียว เห็นว่าตรงกันตรงไหน"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="8" cy="6" r="4" opacity=".75"/><circle cx="11" cy="6" r="4" opacity=".75"/><circle cx="14" cy="6" r="4" opacity=".75"/></svg>รวมเล่ม</button></div><p data-b="crossinfo" class="crossinfo"></p><div class="modes"><button data-m="book" class="on">สีตามเล่ม</button><button data-m="chapter">สีตามบท</button></div><div data-b="fams"></div></div>
+    <aside data-b="panel" class="panel glass"></aside>
+    <div class="tip" data-b="tip"></div>
+    <div class="status" data-b="status"></div>
+  </section>
+  <div class="fade"></div>
+  <main id="books" class="mx-auto max-w-5xl px-5 pb-12">
+    <slot />
+  </main>
+  <footer class="mx-auto max-w-5xl px-5 pb-10 text-xs text-muted">{cfg.footer}</footer>
+  <script>
+    import { mountBrain } from "../lib/brain-scene";
+    const el = document.getElementById("brain")!; mountBrain(el, { home: [0, 55, 185], base: el.dataset.base });
+  </script>
+</body>
+</html>
