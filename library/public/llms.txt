@@ -9,5 +9,5 @@ A static library of books with a prebuilt semantic index. Everything below is a 
 - brain/data/knn.u32        n x 4 nearest passages in meaning
 - <slug>/<chapter_file>/    the chapter as a web page
 
-To search by meaning, embed your query with the same model and the query prompt in meta.json, then take the dot product
+To search by meaning, embed your query with the same model (in a browser: onnx-community/embeddinggemma-300m-ONNX, output sentence_embedding) and the query prompt in meta.json, then take the dot product
 with vec768. Without an embedding model, match words in passages.json.

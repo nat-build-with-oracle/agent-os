@@ -13,7 +13,10 @@ to AI agents through an MCP server.
   thing overlap (cross-book links light up). Click a dot to read it and follow light to its 4 nearest passages; the explore
   tour walks the cross-book pairs.
 - **Search.** `bun run serve` adds meaning search (query embedded on the ANE, dot product over the 768-d vectors). On a
-  static host the page falls back to exact words; agents can use the files listed in `public/llms.txt`.
+  static host such as GitHub Pages the same EmbeddingGemma runs in the visitor's browser (`onnx-community/embeddinggemma-300m-ONNX`,
+  q4, about 197 MB fetched from Hugging Face on the first search, then cached; WebGPU when available, else WASM) and is
+  ranked against the prebuilt `vec768.i8`. Exact-word hits show at once while the model loads. Agents can use the files listed
+  in `public/llms.txt`.
 - **MCP.** `bun mcp.ts` is a stdio MCP server over the prebuilt vectors: `library_books`, `library_search`,
   `library_neighbours`, `library_chapter`.
 
@@ -39,6 +42,9 @@ Only put books here that you are allowed to publish.
 - 812 passages embedded in about 0.4 s incremental (cache) / a few seconds from scratch; UMAP 3D in about 8 s.
 - Meaning search answers in about 100 ms (query embedding included).
 - 768-d vs 256-d search on 392 section-heading queries: MRR 0.412 vs 0.368, hit@5 0.564 vs 0.503.
+- Browser query vs ANE query, both against the ANE-built corpus (80 heading queries, 812 passages): q4 MRR 0.380 vs 0.383,
+  hit@5 0.512 for both, top-10 overlap 0.88 (q8/fp16: 0.976, at 309/617 MB). The model needs its `sentence_embedding`
+  output, which includes EmbeddingGemma's dense projection; mean-pooled hidden states score cosine 0.03 against the ANE vectors.
 
 ## License
 

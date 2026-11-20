@@ -193,16 +193,49 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     clearTimeout(tipTimer); if (!r) { tipTimer = setTimeout(() => (tip.style.opacity = "0"), 180); return; } tip.style.display = "block"; tip.style.opacity = "1"; const rr = root.getBoundingClientRect(); tip.style.left = e.clientX - rr.left + 14 + "px"; tip.style.top = e.clientY - rr.top + 10 + "px";
     tip.textContent = r.cover != null ? `${meta.books[r.cover].title} · click to open the book` : `${meta.books[rows[r.i!][0]].title} · ${rows[r.i!][2]}`; });
 
-  // search: meaning (server) + exact words, fallback to words only
+  // search: meaning + exact words. With a server (bun server.ts) the query is embedded on the ANE there; on a static host
+  // (GitHub Pages) the same EmbeddingGemma runs in the visitor's browser (ONNX q4, ~197 MB, fetched once on the first search,
+  // then cached) and is ranked against the prebuilt vec768.i8. Measured 2026-11-20 on 80 heading queries over 812 passages:
+  // browser q4 MRR 0.380 vs ANE 0.383, hit@5 0.512 both, top-10 overlap 0.88.
   let lastHits = "";
-  $("f").addEventListener("submit", async (e) => { e.preventDefault(); const q = ($("q") as HTMLInputElement).value.trim(); if (!q) return;
-    let hits: number[] = [], how = "";
-    try { const r = await fetch(`${BASE}brain/search`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, k: 30 }) });
-      const j = await r.json(); hits = [...new Set<number>([...(j.keyword || []), ...(j.hits || []).map((h: any) => h.i)])].slice(0, 30); how = j.vector_from; }
-    catch { const lq = q.toLowerCase(); rows.forEach((r: any, i: number) => { if ((r[3] + " " + r[4]).toLowerCase().includes(lq)) hits.push(i); }); hits = hits.slice(0, 30); how = "exact words (no meaning-search server)"; }
+  const show = (q: string, hits: number[], how: string) => {
     if (!hits.length) { $("status").textContent = `Nothing found for "${q}"`; return; }
     lastHits = `<p class="meta" style="margin-top:16px">Results for "${esc(q)}" · ${hits.length} results · ${esc(how)}</p><div class="hits">${hits.map((i) => `<button data-i="${i}"><small style="color:${BOOKC[rows[i][0] % 6]}">${esc(meta.books[rows[i][0]].title)} · ${esc(rows[i][2])}</small><br>${esc(rows[i][4].slice(0, 110))}…</button>`).join("")}</div>`;
-    open(hits[0], lastHits); focus = new Set(hits); focusMain = hits[0]; paint(); });
+    open(hits[0], lastHits); focus = new Set(hits); focusMain = hits[0]; paint(); };
+  const words = (q: string) => { const lq = q.toLowerCase(), h: number[] = []; rows.forEach((r: any, i: number) => { if ((r[3] + " " + r[4]).toLowerCase().includes(lq)) h.push(i); }); return h; };
+  let webEmbed: Promise<(t: string) => Promise<Float32Array>> | null = null, V768: Promise<Int8Array> | null = null;
+  const loadEmbed = (say: (s: string) => void) => (webEmbed ??= (async () => {
+    const { AutoModel, AutoTokenizer } = await import("@huggingface/transformers");
+    const ID = "onnx-community/embeddinggemma-300m-ONNX", got: Record<string, [number, number]> = {};
+    const progress_callback = (p: any) => { if (p.status !== "progress" || !p.total) return; got[p.file] = [p.loaded, p.total];
+      const [l, t] = Object.values(got).reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]); say(`loading the meaning model in your browser · ${Math.round(l / 1e6)} / ${Math.round(t / 1e6)} MB (once)`); };
+    const tok = await AutoTokenizer.from_pretrained(ID);
+    let model: any;
+    try { if (!(navigator as any).gpu) throw 0; model = await AutoModel.from_pretrained(ID, { dtype: "q4", device: "webgpu", progress_callback }); }
+    catch { model = await AutoModel.from_pretrained(ID, { dtype: "q4", device: "wasm", progress_callback }); }
+    return async (t: string) => (await model(tok([t], { padding: true }))).sentence_embedding.data as Float32Array;
+  })().catch((e) => { webEmbed = null; throw e; }));
+  async function meaning(q: string, say: (s: string) => void) {
+    const [embed, V] = await Promise.all([loadEmbed(say), (V768 ??= bin("vec768.i8", Int8Array))]);
+    say("searching by meaning…");
+    const v = await embed((meta.query_prompt || "task: search result | query: ") + q), d = meta.dim_full, s = new Float32Array(meta.n);
+    for (let i = 0; i < meta.n; i++) { let a = 0; for (let j = 0, o = i * d; j < d; j++) a += V[o + j] * v[j]; s[i] = a; }
+    return Array.from(s.keys()).sort((a, b) => s[b] - s[a]).slice(0, 30);
+  }
+  let seq = 0;
+  $("f").addEventListener("submit", async (e) => { e.preventDefault(); const q = ($("q") as HTMLInputElement).value.trim(); if (!q) return;
+    const my = ++seq;
+    try { const r = await fetch(`${BASE}brain/search`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, k: 30 }) });
+      if (!r.ok) throw 0; const j = await r.json();
+      return show(q, [...new Set<number>([...(j.keyword || []), ...(j.hits || []).map((h: any) => h.i)])].slice(0, 30), j.vector_from); }
+    catch {}
+    const kw = words(q);
+    if (!meta.dim_full) return show(q, kw.slice(0, 30), "exact words");
+    if (kw.length) show(q, kw.slice(0, 30), "exact words · meaning results on the way");
+    const say = (t: string) => { if (my === seq) $("status").textContent = t; };
+    try { const m = await meaning(q, say); if (my !== seq) return; say("");
+      show(q, [...new Set([...kw, ...m])].slice(0, 30), "meaning (EmbeddingGemma in your browser) + exact words"); }
+    catch (err) { console.warn("meaning search", err); if (my === seq) { say("the meaning model could not load here; exact words only"); if (!kw.length) show(q, [], ""); } } });
 
   // separate / combined toggle: morph every point (and the lines riding on the same buffer) to the other layout in 1.4 s
   function setLayout(next: "sep" | "all") {
