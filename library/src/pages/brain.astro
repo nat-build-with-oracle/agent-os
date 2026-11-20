@@ -14,12 +14,12 @@ import { url, BASE } from "../lib/books";
 <div id="brain" data-base={BASE} class="brain">
   <canvas data-b="c"></canvas>
   <div class="top">
-    <div class="brand glass"><a href={url("")}>{cfg.title}</a><b>brain</b><span data-b="stat">กำลังโหลด…</span></div>
-    <form data-b="f" class="search glass"><input data-b="q" type="search" placeholder="ค้นด้วยความหมาย เช่น จับคู่ iPad · ทำไมเข้าได้แค่ tailnet" /><button class="btn">ค้น</button></form>
-    <button data-b="play" class="btn play" title="ทัวร์อัตโนมัติ: เดินตามจุดที่หนังสือต่างเล่มพูดเรื่องเดียวกัน">▶ สำรวจ</button><button data-b="links" class="btn">เส้น: เปิด</button>
-    <button data-b="reset" class="btn" title="กลับมุมเริ่มต้น">⟲</button>
+    <div class="brand glass"><a href={url("")}>{cfg.title}</a><b>brain</b><span data-b="stat">loading…</span></div>
+    <form data-b="f" class="search glass"><input data-b="q" type="search" placeholder="search by meaning, e.g. how are vectors built" /><button class="btn">Search</button></form>
+    <button data-b="play" class="btn play" title="auto tour: passages where different books say the same thing">▶ Explore</button><button data-b="links" class="btn">links: on</button>
+    <button data-b="reset" class="btn" title="reset view">⟲</button>
   </div>
-  <div class="legend glass"><div class="seg" data-b="seg"><span class="thumb"></span><button data-layout="sep" class="on" title="แต่ละเล่มมีกลุ่มของตัวเอง"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="4" cy="6" r="3.2"/><circle cx="11" cy="6" r="3.2"/><circle cx="18" cy="6" r="3.2"/></svg>แยกเล่ม</button><button data-layout="all" title="ทุกเล่มในพื้นที่ความหมายเดียว เห็นว่าตรงกันตรงไหน"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="8" cy="6" r="4" opacity=".75"/><circle cx="11" cy="6" r="4" opacity=".75"/><circle cx="14" cy="6" r="4" opacity=".75"/></svg>รวมเล่ม</button></div><p data-b="crossinfo" class="crossinfo"></p><div class="modes"><button data-m="book" class="on">สีตามเล่ม</button><button data-m="chapter">สีตามบท</button></div><div data-b="fams"></div></div>
+  <div class="legend glass"><div class="seg" data-b="seg"><span class="thumb"></span><button data-layout="sep" class="on" title="each book in its own cloud"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="4" cy="6" r="3.2"/><circle cx="11" cy="6" r="3.2"/><circle cx="18" cy="6" r="3.2"/></svg>Separate</button><button data-layout="all" title="all books in one meaning space: see where they agree"><svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><circle cx="8" cy="6" r="4" opacity=".75"/><circle cx="11" cy="6" r="4" opacity=".75"/><circle cx="14" cy="6" r="4" opacity=".75"/></svg>Combined</button></div><p data-b="crossinfo" class="crossinfo"></p><div class="modes"><button data-m="book" class="on">By book</button><button data-m="chapter">By chapter</button></div><div data-b="fams"></div></div>
   <aside data-b="panel" class="panel glass"></aside>
   <div class="tip" data-b="tip"></div>
   <div class="status" data-b="status"></div>

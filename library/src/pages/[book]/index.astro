@@ -8,14 +8,14 @@ const { book } = Astro.props;
 ---
 <Shell title={book.title}>
   <main class="mx-auto grid max-w-5xl gap-10 px-5 py-12 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
-    <img src={book.cover} alt={`ปก ${book.title}`} class="w-48 rounded border border-rule md:w-full" />
+    <img src={book.cover} alt={`Cover of ${book.title}`} class="w-48 rounded border border-rule md:w-full" />
     <div class="min-w-0">
-      <p class="text-xs text-muted">{book.date} · {book.pages ?? "?"} หน้า · {book.chapters.length} ไฟล์ · ราว {book.words.toLocaleString("en-US")} คำ</p>
+      <p class="text-xs text-muted">{book.date} · {book.chapters.length} chapters{book.pages ? ` · ${book.pages} pages` : ""} · about {book.words.toLocaleString("en-US")} words</p>
       <h1 class="mt-1 text-4xl font-bold leading-tight">{book.title}</h1>
       <p class="mt-3 text-lg">{book.subtitle}</p>
       <p class="mt-6 flex flex-wrap gap-3">
-        {book.foreword && <a href={book.foreword.href} class="flex min-h-11 items-center rounded bg-accent-ink px-5 font-bold text-white hover:bg-ink">เริ่มอ่าน: {book.foreword.title}</a>}
-        <a href={book.pdf} class="flex min-h-11 items-center rounded border border-ink px-5 font-bold hover:bg-ink hover:text-paper">PDF ทั้งเล่ม</a>
+        {book.foreword && <a href={book.foreword.href} class="flex min-h-11 items-center rounded bg-accent-ink px-5 font-bold text-white hover:bg-ink">Start reading: {book.foreword.title}</a>}
+        <a href={book.pdf} class="flex min-h-11 items-center rounded border border-ink px-5 font-bold hover:bg-ink hover:text-paper">PDF</a>
       </p>
       {book.parts.map((p) => (
         <section class="mt-10">

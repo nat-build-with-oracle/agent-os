@@ -4,14 +4,14 @@ const list = await books();
 const n = (x: number) => x.toLocaleString("en-US");
 ---
 <p class="text-muted hidden">
-  {list.length} เล่ม · {list.reduce((s, b) => s + b.chapters.length, 0)} ไฟล์บท ·
-  {n(list.reduce((s, b) => s + (b.pages ?? 0), 0))} หน้า PDF
+  {list.length} books · {list.reduce((s, b) => s + b.chapters.length, 0)} chapters ·
+  {n(list.reduce((s, b) => s + (b.pages ?? 0), 0))} PDF pages
 </p>
 <ol class="mt-10 space-y-16">
   {list.map((b) => (
     <li class="grid gap-6 border-t border-rule pt-8 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
       <a href={url(`${b.slug}/`)} class="block w-36 sm:w-auto">
-        <img src={b.cover} alt={`ปก ${b.title}`} width="176" class="w-full rounded border border-rule" loading="lazy" />
+        <img src={b.cover} alt={`Cover of ${b.title}`} width="176" class="w-full rounded border border-rule" loading="lazy" />
       </a>
       <div class="min-w-0">
         <p class="text-xs text-muted">{b.date} · {b.chapters.length} chapters{b.pages ? ` · ${b.pages} pages` : ""}</p>

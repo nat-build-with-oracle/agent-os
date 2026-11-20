@@ -15,7 +15,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     bin("knn.u32", Uint32Array), fetch(`${BASE}brain/data/passages.json`).then((r) => r.json()),
   ]);
   const N: number = meta.n, K: number = meta.k;
-  $("stat").textContent = `${N.toLocaleString()} ย่อหน้า · ${meta.books.length} เล่ม · Apple Neural Engine`;
+  $("stat").textContent = `${N.toLocaleString()} passages · ${meta.books.length} books · Apple Neural Engine`;
   $("status").textContent = `build ${meta.built.slice(0, 16).replace("T", " ")} · EmbeddingGemma ${meta.dim}d · UMAP 3D`;
 
   // layout: each book gets its own cloud on a ring (the books share one subject, so one common UMAP piles them on top of
@@ -31,7 +31,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     const c = [Math.cos(ang) * RING, (k % 2 ? 10 : -10), Math.sin(ang) * RING];
     for (const i of ids) for (let a = 0; a < 3; a++) xyz[i * 3 + a] = Math.max(-CLOUD * 2.6, Math.min(CLOUD * 2.6, (raw[i * 3 + a] - med[a]) * s)) + c[a];
   });
-  // two layouts from the SAME vectors: "แยก" = one cloud per book (above), "รวม" = one shared meaning space (the raw UMAP),
+  // two layouts from the SAME vectors: "separate" = one cloud per book (above), "combined" = one shared meaning space (the raw UMAP),
   // where books that say the same thing land on top of each other. xyz is the live buffer, morphed between the two.
   const sepXYZ = xyz.slice(), allXYZ = new Float32Array(raw.length);
   { const med = [0, 1, 2].map((a) => { const v = Array.from({ length: N }, (_, i) => raw[i * 3 + a]).sort((p, q) => p - q); return v[N >> 1]; });
@@ -87,7 +87,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
   const bookLine = new THREE.Line(bookGeo, new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 2, gapSize: 1.5, transparent: true, opacity: 0.7, depthWrite: false, fog: false }));
   bookLine.visible = false; scene.add(bookLine);
   let hover = -1; let tipTimer: any = 0;
-  // links: in "แยก" only short links inside a cloud (long ones read as noise); in "รวม" every link, so lines between books show where they agree
+  // links: in "separate" only short links inside a cloud (long ones read as noise); in "combined" every link, so lines between books show where they agree
   const pairsSep: number[] = [], pairsAll: number[] = [], cross: number[] = []; const seen = new Set<number>();
   for (let i = 0; i < N; i++) for (let t = 0; t < K; t++) { const j = knn[i * K + t]; if (j >= N || j === i) continue; const a = Math.min(i, j), b = Math.max(i, j); if (seen.has(a * N + b)) continue; seen.add(a * N + b);
     pairsAll.push(a, b); if (book[a] !== book[b]) cross.push(a, b);
@@ -96,7 +96,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
   const lgeo = new THREE.BufferGeometry(); lgeo.setAttribute("position", geo.attributes.position); lgeo.setAttribute("color", geo.attributes.color); lgeo.setIndex(pairs);
   const links = new THREE.LineSegments(lgeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.28, depthWrite: false, blending: THREE.AdditiveBlending }));
   scene.add(links);
-  $("links").onclick = () => { links.visible = !links.visible; $("links").textContent = links.visible ? "เส้น: เปิด" : "เส้น: ปิด"; };
+  $("links").onclick = () => { links.visible = !links.visible; $("links").textContent = links.visible ? "links: on" : "links: off"; };
 
   // floating covers above each book's cloud
   const covers: THREE.Mesh[] = []; const loader = new THREE.TextureLoader();
@@ -111,7 +111,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     edge.position.z = -0.05; m.add(edge);
     const ang = (k / meta.books.length) * Math.PI * 2 + 0.5;
     m.userData = { book: k, home: new THREE.Vector3(cx, top + H * 0.5 + 4, cz), sepHome: new THREE.Vector3(cx, top + H * 0.5 + 4, cz),
-      allHome: new THREE.Vector3(Math.cos(ang) * 95, 62 + (k % 2) * 10, Math.sin(ang) * 95) };   // แยก: above its own cloud · รวม: on a ring around the shared space
+      allHome: new THREE.Vector3(Math.cos(ang) * 95, 62 + (k % 2) * 10, Math.sin(ang) * 95) };   // separate: above its own cloud · combined: on a ring around the shared space
     m.position.copy(m.userData.home); scene.add(m); covers.push(m);
   });
 
@@ -163,9 +163,9 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     const [b, , chap, sec, text] = rows[i]; const nb = Array.from({ length: K }, (_, k) => knn[i * K + k]);
     focus = new Set([i, ...nb]); focusMain = i; paint(); flyTo(i);
     $("panel").innerHTML = `<button class="btn x" data-b="close">✕</button>
-      <a class="bookchip" href="${BASE}${meta.books[b].slug}/" style="--c:${BOOKC[b % 6]}"><img src="${BASE}covers/${meta.books[b].slug}.png" alt="" /><span><small>จากหนังสือ</small><b>${esc(meta.books[b].title)}</b></span></a><h3>${esc(chap)}</h3><p class="meta">${esc(sec || "")}</p>
-      <p class="t">${esc(text)}</p><p><a href="${link(i)}">อ่านในบท →</a></p>
-      <p class="meta" style="margin-top:16px">ใกล้ที่สุดในความหมาย</p><div class="hits">${nb.map((j) => `<button data-i="${j}"><small style="color:${BOOKC[rows[j][0] % 6]}">${esc(meta.books[rows[j][0]].title)} · ${esc(rows[j][2])}</small><br>${esc(rows[j][4].slice(0, 110))}…</button>`).join("")}</div>${extra}`;
+      <a class="bookchip" href="${BASE}${meta.books[b].slug}/" style="--c:${BOOKC[b % 6]}"><img src="${BASE}covers/${meta.books[b].slug}.png" alt="" /><span><small>from the book</small><b>${esc(meta.books[b].title)}</b></span></a><h3>${esc(chap)}</h3><p class="meta">${esc(sec || "")}</p>
+      <p class="t">${esc(text)}</p><p><a href="${link(i)}">Read in chapter →</a></p>
+      <p class="meta" style="margin-top:16px">Nearest in meaning</p><div class="hits">${nb.map((j) => `<button data-i="${j}"><small style="color:${BOOKC[rows[j][0] % 6]}">${esc(meta.books[rows[j][0]].title)} · ${esc(rows[j][2])}</small><br>${esc(rows[j][4].slice(0, 110))}…</button>`).join("")}</div>${extra}`;
     $("panel").classList.add("open");
   }
   root.addEventListener("click", (e) => { const t = e.target as HTMLElement;
@@ -191,7 +191,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     renderer.domElement.style.cursor = r ? "pointer" : e.buttons ? "grabbing" : "grab";   // hand on anything clickable
     hover = r?.i ?? -1;   // no repaint on hover: a size pop on every dot crossed read as blinking
     clearTimeout(tipTimer); if (!r) { tipTimer = setTimeout(() => (tip.style.opacity = "0"), 180); return; } tip.style.display = "block"; tip.style.opacity = "1"; const rr = root.getBoundingClientRect(); tip.style.left = e.clientX - rr.left + 14 + "px"; tip.style.top = e.clientY - rr.top + 10 + "px";
-    tip.textContent = r.cover != null ? `${meta.books[r.cover].title} · คลิกเพื่อเปิดเล่ม` : `${meta.books[rows[r.i!][0]].title} · ${rows[r.i!][2]}`; });
+    tip.textContent = r.cover != null ? `${meta.books[r.cover].title} · click to open the book` : `${meta.books[rows[r.i!][0]].title} · ${rows[r.i!][2]}`; });
 
   // search: meaning (server) + exact words, fallback to words only
   let lastHits = "";
@@ -199,12 +199,12 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     let hits: number[] = [], how = "";
     try { const r = await fetch(`${BASE}brain/search`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, k: 30 }) });
       const j = await r.json(); hits = [...new Set<number>([...(j.keyword || []), ...(j.hits || []).map((h: any) => h.i)])].slice(0, 30); how = j.vector_from; }
-    catch { const lq = q.toLowerCase(); rows.forEach((r: any, i: number) => { if ((r[3] + " " + r[4]).toLowerCase().includes(lq)) hits.push(i); }); hits = hits.slice(0, 30); how = "คำตรงตัว (ไม่มีเซิร์ฟเวอร์ค้นความหมาย)"; }
-    if (!hits.length) { $("status").textContent = `ไม่พบ "${q}"`; return; }
-    lastHits = `<p class="meta" style="margin-top:16px">ผลค้น "${esc(q)}" · ${hits.length} ผล · ${esc(how)}</p><div class="hits">${hits.map((i) => `<button data-i="${i}"><small style="color:${BOOKC[rows[i][0] % 6]}">${esc(meta.books[rows[i][0]].title)} · ${esc(rows[i][2])}</small><br>${esc(rows[i][4].slice(0, 110))}…</button>`).join("")}</div>`;
+    catch { const lq = q.toLowerCase(); rows.forEach((r: any, i: number) => { if ((r[3] + " " + r[4]).toLowerCase().includes(lq)) hits.push(i); }); hits = hits.slice(0, 30); how = "exact words (no meaning-search server)"; }
+    if (!hits.length) { $("status").textContent = `Nothing found for "${q}"`; return; }
+    lastHits = `<p class="meta" style="margin-top:16px">Results for "${esc(q)}" · ${hits.length} results · ${esc(how)}</p><div class="hits">${hits.map((i) => `<button data-i="${i}"><small style="color:${BOOKC[rows[i][0] % 6]}">${esc(meta.books[rows[i][0]].title)} · ${esc(rows[i][2])}</small><br>${esc(rows[i][4].slice(0, 110))}…</button>`).join("")}</div>`;
     open(hits[0], lastHits); focus = new Set(hits); focusMain = hits[0]; paint(); });
 
-  // แยก / รวม toggle: morph every point (and the lines riding on the same buffer) to the other layout in 1.4 s
+  // separate / combined toggle: morph every point (and the lines riding on the same buffer) to the other layout in 1.4 s
   function setLayout(next: "sep" | "all") {
     if (next === layout) return; layout = next;
     morph = { from: xyz.slice(), to: next === "all" ? allXYZ : sepXYZ, t0: clock.getElapsedTime() };
@@ -212,21 +212,21 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
     covers.forEach((m) => (m.userData.home = next === "all" ? m.userData.allHome : m.userData.sepHome));
     root.querySelectorAll("[data-layout]").forEach((b) => b.classList.toggle("on", (b as HTMLElement).dataset.layout === next));
     $("seg")?.setAttribute("data-at", next);
-    $("crossinfo") && ($("crossinfo").textContent = next === "all" ? `${(cross.length / 2).toLocaleString()} จุดที่ต่างเล่มพูดเรื่องเดียวกัน · กด ▶ สำรวจ` : "แต่ละเล่มมีกลุ่มของตัวเอง");
+    $("crossinfo") && ($("crossinfo").textContent = next === "all" ? `${(cross.length / 2).toLocaleString()} places where different books say the same thing · press ▶ Explore` : "each book in its own cloud");
   }
   root.querySelectorAll("[data-layout]").forEach((b) => b.addEventListener("click", () => setLayout((b as HTMLElement).dataset.layout as any)));
-  $("crossinfo") && ($("crossinfo").textContent = "แต่ละเล่มมีกลุ่มของตัวเอง");
-  // ▶ สำรวจ: a tour over the cross-book links (two books saying the same thing), one pair every 5 s; any user click pauses it
+  $("crossinfo") && ($("crossinfo").textContent = "each book in its own cloud");
+  // ▶ Explore: a tour over the cross-book links (two books saying the same thing), one pair every 5 s; any user click pauses it
   let tour: any = 0, tourAt = 0;
   const tourOrder = Array.from({ length: cross.length / 2 }, (_, k) => k).sort(() => Math.random() - 0.5);
   function tourStep() { const k = tourOrder[tourAt++ % tourOrder.length], a = cross[k * 2], b = cross[k * 2 + 1];
-    open(a, `<p class="meta" style="margin-top:16px">ทัวร์ข้ามเล่ม · ${tourAt}/${tourOrder.length} · คู่ที่ความหมายใกล้กัน</p><div class="hits"><button data-i="${b}"><small style="color:${BOOKC[rows[b][0] % 6]}">${esc(meta.books[rows[b][0]].title)} · ${esc(rows[b][2])}</small><br>${esc(rows[b][4].slice(0, 140))}…</button></div>`);
+    open(a, `<p class="meta" style="margin-top:16px">Cross-book tour · ${tourAt}/${tourOrder.length} · a pair close in meaning</p><div class="hits"><button data-i="${b}"><small style="color:${BOOKC[rows[b][0] % 6]}">${esc(meta.books[rows[b][0]].title)} · ${esc(rows[b][2])}</small><br>${esc(rows[b][4].slice(0, 140))}…</button></div>`);
     focus = new Set([a, b, ...Array.from({ length: K }, (_, t) => knn[a * K + t])]); focusMain = a; paint(); }
-  function stopTour() { clearInterval(tour); tour = 0; $("play").textContent = "▶ สำรวจ"; $("play").classList.remove("on"); }
-  $("play").onclick = (e) => { e.stopPropagation(); if (tour) return stopTour(); setLayout("all"); $("play").textContent = "⏸ หยุด"; $("play").classList.add("on");
+  function stopTour() { clearInterval(tour); tour = 0; $("play").textContent = "▶ Explore"; $("play").classList.remove("on"); }
+  $("play").onclick = (e) => { e.stopPropagation(); if (tour) return stopTour(); setLayout("all"); $("play").textContent = "⏸ Stop"; $("play").classList.add("on");
     setTimeout(tourStep, 900); tour = setInterval(tourStep, 5000); };
   renderer.domElement.addEventListener("pointerdown", () => tour && stopTour());
-  // auto loop: the layout flips แยก ↔ รวม every 7 s and the switch floats, until the user does anything at all
+  // auto loop: the layout flips separate ↔ combined every 7 s and the switch floats, until the user does anything at all
   let flips = 0;   // auto loop runs 5 flips, then rests (Nat, 2026-11-20)
   let auto: any = setInterval(() => { setLayout(layout === "sep" ? "all" : "sep"); if (++flips >= 5) stopAuto(); }, 7000);
   $("seg")?.classList.add("auto");
@@ -245,7 +245,7 @@ export async function mountBrain(root: HTMLElement, opts: { home?: [number, numb
       pulses.forEach((p, n) => { const L = Math.max(1, pathTo.length), j = pathTo[n % L]; if (j == null) { p.visible = false; return; }
         const u = (t * 0.55 + Math.floor(n / L) / 3) % 1, e = u * u * (3 - 2 * u);
         p.position.set(xyz[focusMain*3] + (xyz[j*3] - xyz[focusMain*3]) * e, xyz[focusMain*3+1] + (xyz[j*3+1] - xyz[focusMain*3+1]) * e, xyz[focusMain*3+2] + (xyz[j*3+2] - xyz[focusMain*3+2]) * e);
-        p.scale.setScalar(3.2 * Math.sin(Math.PI * u) + 0.4); p.material.opacity = Math.sin(Math.PI * u); p.material.color.copy(halo.material.color); }); } covers.forEach((m, k) => { const h = m.userData.home;   // glide to home (x, y, z) so covers travel with their cloud on แยก ⇄ รวม
+        p.scale.setScalar(3.2 * Math.sin(Math.PI * u) + 0.4); p.material.opacity = Math.sin(Math.PI * u); p.material.color.copy(halo.material.color); }); } covers.forEach((m, k) => { const h = m.userData.home;   // glide to home (x, y, z) so covers travel with their cloud on separate ⇄ combined
       m.position.x += (h.x - m.position.x) * 0.06; m.position.z += (h.z - m.position.z) * 0.06;
       m.position.y += (h.y + Math.sin(t * 0.6 + k) * 1.2 - m.position.y) * 0.06; m.quaternion.copy(camera.quaternion);
       const e = m.userData.emph ?? 1; m.scale.setScalar(m.scale.x + (e - m.scale.x) * 0.1); });

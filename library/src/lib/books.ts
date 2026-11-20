@@ -73,7 +73,7 @@ export async function books(): Promise<Book[]> {
     const foreword = byNum.get("00") ?? null;
     if (foreword) placed.add("00");
     const rest = chapters.filter((c) => !placed.has(c.num));
-    if (rest.length) parts.push({ title: "อื่น ๆ", chapters: rest });
+    if (rest.length) parts.push({ title: "Other", chapters: rest });
     out.push({
       slug, dir, date: dir.slice(0, 10), title: front(outline, "title"), subtitle: front(outline, "subtitle"),
       pages: pdfPages(path.join(ROOT, dir, "book.pdf")), parts, foreword, chapters, words,
